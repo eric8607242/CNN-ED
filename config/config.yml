@@ -1,0 +1,27 @@
+train:
+  device: "cuda:0"
+  n_epochs: 50
+  triplet_sample_num: 64
+  neighbors_num: 100
+  logdir: "./logs/"
+  resume: false
+  print_freq: 100
+
+dataset:
+  training_set_num: 1000
+  query_set_num: 1000
+  path_to_dataset: "./data/word.txt"
+
+dataloader:
+  batch_size: 64
+  num_workers: 4
+
+model:
+  n_features: 128
+
+# Adam
+optimizer:
+  lr: 0.0001
+
+criterion:
+  alpha: 0.8
