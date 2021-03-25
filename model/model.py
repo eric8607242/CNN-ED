@@ -7,14 +7,6 @@ from .model_ops import get_block
 def get_model_config(n_features):
                     # block_type, kernel_size, out_channels
     model_config = {"main" : [["conv1d_pool", 3, 8],
-                              ["conv1d_pool", 3, 8],
-                              ["conv1d_pool", 3, 8],
-                              ["conv1d_pool", 3, 8],
-                              ["conv1d_pool", 3, 8],
-                              ["conv1d_pool", 3, 8],
-                              ["conv1d_pool", 3, 8],
-                              ["conv1d_pool", 3, 8],
-                              ["conv1d_pool", 3, 8],
                               ["conv1d_pool", 3, 8]],
                     "last" : [["linear", None, n_features]]
                     }
@@ -42,7 +34,7 @@ class Model(nn.Module):
 
         self.main_stage = nn.ModuleList(main_stage)
 
-        in_channels = max_str_len // pool_size * alphabet_len // in_channels
+        in_channels = max_str_len // pool_size * alphabet_len * in_channels
         self.flatten_in_channels = in_channels
 
         last_stage = []
@@ -57,12 +49,16 @@ class Model(nn.Module):
             in_channels = out_channels 
         self.last_stage = nn.ModuleList(last_stage)
 
+        self.max_str_len = max_str_len
+
 
     def forward(self, x):
+        N = x.shape[0]
+        x = x.view(-1, 1, self.max_str_len)
         for l in self.main_stage:
             x = l(x)
 
-        x = x.view(-1, self.flatten_in_channels)
+        x = x.view(N, -1)
         for l in self.last_stage:
             x = l(x)
 

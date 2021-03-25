@@ -20,7 +20,7 @@ def get_block(block_type,
               in_channels,
               out_channels):
 
-    if block_type == "conv1d":
+    if block_type == "conv1d_pool":
         block = Conv1dPool(kernel_size, in_channels, out_channels)
 
     elif block_type == "linear":

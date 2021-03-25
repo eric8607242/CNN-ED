@@ -1,4 +1,5 @@
 import os
+import os.path as osp
 import logging
 import numpy as np
 
@@ -9,10 +10,9 @@ from torch.utils.data import DataLoader
 
 from dataset import get_dataset
 from model import get_model_config, Model
-from criterion import Criterion
+from utils import Criterion, get_logger, AverageMeter, set_random_seed
 
 class Trainer:
-
     def __init__(self, config):
         # Environment
         # ===================================================================
@@ -24,7 +24,8 @@ class Trainer:
         train_dataset, val_dataset, alphabet_len, max_str_len = \
                 get_dataset(path_to_dataset=config["dataset"]["path_to_dataset"],
                             training_set_num=config["dataset"]["training_set_num"], 
-                            query_set_num=config["dataset"]["query_set_num"])
+                            query_set_num=config["dataset"]["query_set_num"],
+                            neighbor_num=config["dataset"]["neighbor_num"])
 
         self.train_loader = DataLoader(dataset=train_dataset,
                                        batch_size=config["dataloader"]["batch_size"],
@@ -48,7 +49,8 @@ class Trainer:
 
         # Loss Function
         # ===================================================================
-        self.criterion = Criterion(config["criterion"]["alpha"])
+        criterion = Criterion(config["criterion"]["alpha"])
+        self.criterion = criterion.to(self.device)
 
         # Training State
         # ===================================================================
@@ -92,7 +94,7 @@ class Trainer:
 
             self.optimizer.step()
             
-            self._intermediate_stats_logging(i, len(self.train_loader, loss, triplet_loss, appro_loss, N, "Train"))
+            self._intermediate_stats_logging(i, len(self.train_loader), loss, triplet_loss, appro_loss, N, "Train")
         self._reset_losses()
 
     def _intermediate_stats_logging(self, step, len_loader, loss, triplet_loss, appro_loss, N, val_train_state):
@@ -112,6 +114,7 @@ class Trainer:
         with torch.no_grad():
             for i, data in enumerate(self.val_loader):
                 anchor_onehot_string, positive_onehot_string, negative_onehot_string, positive_distance, negative_distance = self._data_preprocess(data)
+                N = anchor_onehot_string.shape[0]
 
                 anchor_outs = self.model(anchor_onehot_string)
                 positive_outs = self.model(positive_onehot_string)
@@ -119,9 +122,9 @@ class Trainer:
 
                 loss, triplet_loss, appro_loss = self.criterion(anchor_outs, positive_outs, negative_outs, positive_distance, negative_distance)
             
-                self._intermediate_stats_logging(i, len(self.train_loader, loss, triplet_loss, appro_loss, N, "Train"))
+                self._intermediate_stats_logging(i, len(self.val_loader), loss, triplet_loss, appro_loss, N, "Val")
             self._reset_losses()
-            self._save_checkpoint()
+            #self._save_checkpoint()
 
     def _save_checkpoint(self):
         checkpoint = {

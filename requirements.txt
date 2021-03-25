@@ -2,3 +2,4 @@ numpy==1.20.1
 torch==1.7.1
 torchvison==0.8.2
 PyYAML==5.4.1
+python-Levenshtein

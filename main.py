@@ -1,4 +1,4 @@
-import args
+import argparse
 import yaml
 from pprint import pprint
 
@@ -18,7 +18,7 @@ def main(config_path):
     agent.train()
 
 if __name__ == "__main__":
-    parser = argparser.ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", required=True, help="path to configuration file")
     args = vars(parser.parse_args())
     main(args["config"])

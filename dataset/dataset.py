@@ -4,7 +4,7 @@ import Levenshtein
 import torch
 
 class Dataset:
-    def __init__(self, query, base, nearest_info, distance_info, neighbors_num, alphabet_table, max_str_len):
+    def __init__(self, query, base, nearest_info, distance_info, alphabet_table, max_str_len, neighbors_num=100):
         self.query = query
         self.base = base
 
@@ -13,18 +13,21 @@ class Dataset:
 
         self.neighbors_num = neighbors_num
 
-        self.alphabet_table = self._get_alphabet_table()
+        self.alphabet_table = alphabet_table
         self.alphabet_len = len(alphabet_table)
         self.max_str_len = max_str_len
 
     def __len__(self):
-        return len(self.data)
+        return len(self.query)
 
     def __getitem__(self, idx):
         anchor_string = self.query[idx]
 
         positive_string, negative_string, positive_distance, negative_distance = \
                 self._get_pos_neg_string(idx)
+
+        positive_distance = torch.tensor(positive_distance, dtype=torch.float)
+        negative_distance = torch.tensor(negative_distance, dtype=torch.float)
 
         anchor_onehot_string = self._encoding_string(anchor_string)
         positive_onehot_string = self._encoding_string(positive_string)
@@ -39,11 +42,11 @@ class Dataset:
         positive_idx = self.nearest_info[idx, positive_idx]
         negative_idx = self.nearest_info[idx, negative_idx]
 
-        positive_string = self.base[idx, positive_idx]
-        negative_string = self.base[idx, negative_idx]
+        positive_string = self.base[positive_idx]
+        negative_string = self.base[negative_idx]
 
-        positive_distance = self.distance[idx, positive_idx]
-        negative_distance = self.distance[idx, negative_idx]
+        positive_distance = self.distance_info[idx, positive_idx]
+        negative_distance = self.distance_info[idx, negative_idx]
 
         return positive_string, negative_string, positive_distance, negative_distance
 
@@ -69,7 +72,7 @@ class SplitDataset:
 
         self.train_nearest_info, self.train_distance_info = \
                 self._get_data_info(self.train_data, self.train_data)
-        self.eval_nearest_info, self.eval_nearest_info = \
+        self.eval_nearest_info, self.eval_distance_info= \
                 self._get_data_info(self.query_data, self.base_data)
 
     def get_alphabet_table(self):
@@ -82,7 +85,7 @@ class SplitDataset:
         return self.train_data, self.train_nearest_info, self.train_distance_info
 
     def get_eval_data(self):
-        return self.query_data, self.base_data, self.eval_nearest_info, self.eval_nearest_info
+        return self.query_data, self.base_data, self.eval_nearest_info, self.eval_distance_info
 
     def _get_alphabet_table(self, data):
         total_string = "".join(s for s in data)
@@ -107,7 +110,7 @@ class SplitDataset:
         np.random.shuffle(data_idx)
 
         train_data = [data[idx] for idx in data_idx[:training_set_num]]
-        query_data = [data[idx] for idx in data_idx[training_set_num:query_set_num]]
+        query_data = [data[idx] for idx in data_idx[training_set_num:query_set_num+training_set_num]]
         base_data = [data[idx] for idx in data_idx[query_set_num:]]
 
         return train_data, query_data, base_data
@@ -123,7 +126,7 @@ class SplitDataset:
         """
         return (ndarray) : A nearest index metric with shape (len(query), len(base))
         """
-        nearest_info = np.zeros_like(distance_info)
+        nearest_info = np.zeros_like(distance_info, dtype=np.int)
 
         for r in range(nearest_info.shape[0]):
             nearest_info[r, :] = np.argsort(distance_info[r])
@@ -138,7 +141,7 @@ class SplitDataset:
         query_len = len(query)
         base_len = len(base)
 
-        dist = np.zeros(query_len, base_len)
+        dist = np.zeros((query_len, base_len))
         for q_idx in range(query_len):
             for b_idx in range(base_len):
                 dist[q_idx, b_idx] = Levenshtein.distance(query[q_idx], base[b_idx])
