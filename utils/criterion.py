@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Criterion(nn.Module):
+    """
+    Loss function (based on the definition in the paper)
+    """
     def __init__(self, alpha=0.1):
         super(Criterion, self).__init__()
 

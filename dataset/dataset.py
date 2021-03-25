@@ -52,6 +52,10 @@ class Dataset:
 
 
     def _encoding_string(self, string):
+        """
+        Encode string into the one-hot encoding format.
+        return (torch.tensor)
+        """
         onehot_string = torch.zeros((self.alphabet_len, self.max_str_len))
 
         for i, char in enumerate(string):
@@ -60,7 +64,50 @@ class Dataset:
 
         return onehot_string
 
+
+class EvalDataset:
+    def __init__(self, query, alphabet_table, max_str_len, distance_info=None):
+        self.query = query
+
+        self.nearest_info = nearest_info
+        self.distance_info = distance_info
+
+        self.neighbors_num = neighbors_num
+
+        self.alphabet_table = alphabet_table
+        self.alphabet_len = len(alphabet_table)
+        self.max_str_len = max_str_len
+
+    def __len__(self):
+        return len(self.query)
+
+    def __getitem__(self, idx):
+        anchor_string = self.query[idx]
+        anchor_onehot_string = self._encoding_string(anchor_string)
+        
+        if self.distance_info is not None:
+            anchor_distance = self.distance_info[idx]
+            return anchor_onehot_string, anchor_distance
+        return anchor_onehot_string
+
+    def _encoding_string(self, string):
+        """
+        Encode string into the one-hot encoding format.
+        return (torch.tensor)
+        """
+        onehot_string = torch.zeros((self.alphabet_len, self.max_str_len))
+
+        for i, char in enumerate(string):
+            char_idx = self.alphabet_table.index(char)
+            onehot_string[char_idx][i] = 1
+
+        return onehot_string
+
+
 class SplitDataset:
+    """
+    Load data and process the data into train, query, and base set.
+    """
     def __init__(self, path_to_dataset, training_set_num, query_set_num):
         data = self._load_dataset(path_to_dataset)
 
@@ -102,6 +149,7 @@ class SplitDataset:
 
     def _split_data(self, data, training_set_num, query_set_num):
         """
+        Split data into train, query, and base
         return (list) : list of string
         """
         data_len = len(data)

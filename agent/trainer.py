@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from dataset import get_dataset
 from model import get_model_config, Model
-from utils import Criterion, get_logger, AverageMeter, set_random_seed
+from utils import Criterion, get_logger, AverageMeter, set_random_seed, evaluate
 
 class Trainer:
     def __init__(self, config):
@@ -21,7 +21,14 @@ class Trainer:
 
         # Dataset
         # ===================================================================
+        """
         train_dataset, val_dataset, alphabet_len, max_str_len = \
+                get_dataset(path_to_dataset=config["dataset"]["path_to_dataset"],
+                            training_set_num=config["dataset"]["training_set_num"], 
+                            query_set_num=config["dataset"]["query_set_num"],
+                            neighbor_num=config["dataset"]["neighbor_num"])
+        """
+        train_dataset, query_dataset, base_dataset, alphabet_len, max_str_len = \
                 get_dataset(path_to_dataset=config["dataset"]["path_to_dataset"],
                             training_set_num=config["dataset"]["training_set_num"], 
                             query_set_num=config["dataset"]["query_set_num"],
@@ -31,7 +38,17 @@ class Trainer:
                                        batch_size=config["dataloader"]["batch_size"],
                                        num_workers=config["dataloader"]["num_workers"],
                                        shuffle=True)
+        """
         self.val_loader = DataLoader(dataset=val_dataset,
+                                     batch_size=config["dataloader"]["batch_size"],
+                                     num_workers=config["dataloader"]["num_workers"],
+                                     shuffle=False)
+        """
+        self.query_loader = DataLoader(dataset=query_dataset,
+                                       batch_size=config["dataloader"]["batch_size"],
+                                       num_workers=config["dataloader"]["num_workers"],
+                                       shuffle=False)
+        self.base_loader = DataLoader(dataset=base_dataset,
                                      batch_size=config["dataloader"]["batch_size"],
                                      num_workers=config["dataloader"]["num_workers"],
                                      shuffle=False)
@@ -112,6 +129,7 @@ class Trainer:
 
     def _validate(self):
         with torch.no_grad():
+            """
             for i, data in enumerate(self.val_loader):
                 anchor_onehot_string, positive_onehot_string, negative_onehot_string, positive_distance, negative_distance = self._data_preprocess(data)
                 N = anchor_onehot_string.shape[0]
@@ -125,6 +143,34 @@ class Trainer:
                 self._intermediate_stats_logging(i, len(self.val_loader), loss, triplet_loss, appro_loss, N, "Val")
             self._reset_losses()
             #self._save_checkpoint()
+            """
+            query_outs_list = []
+            query_distance = []
+            for i, data in enumerate(self.query_loader):
+                anchor_onehot_string, anchor_distance = data
+                anchor_onehot_string = anchor_onehot_string.to(self.device)
+                anchor_distance = anchor_distance.to(self.device)
+
+                anchor_outs = self.model(anchor_onehot_string)
+
+                query_outs_list.append(anchor_outs)
+                query_distance.append(anchor_distance)
+
+            query_outs = torch.cat(query_outs_list)
+            query_distance = torch.cat(query_distance)
+
+            base_outs_list = []
+            for i, data in enumerate(self.base_loader):
+                anchor_onehot_string = data
+                anchor_onehot_string = anchor_onehot_string.to(self.device)
+
+                anchor_outs = self.model(anchor_onehot_string)
+
+                base_outs_list.append(anchor_outs)
+            base_outs = torch.cat(base_outs_list)
+
+            average_recall = evaluate(query_outs, base_outs, query_distance)
+
 
     def _save_checkpoint(self):
         checkpoint = {
@@ -138,6 +184,9 @@ class Trainer:
         logging.info("Save checkpoint to {}".format(checkpoint_path))
 
     def _data_preprocess(self, data):
+        """
+            Unpack data and convert to the training environment device
+        """
         anchor_onehot_string, positive_onehot_string, negative_onehot_string, positive_distance, negative_distance = data
         
         anchor_onehot_string = anchor_onehot_string.to(self.device)
