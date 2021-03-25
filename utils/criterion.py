@@ -17,7 +17,7 @@ class Criterion(nn.Module):
         approximation_loss = self._approximation_forward(anchor_outs, positive_outs, negative_outs, positive_distance, negative_distance)
 
         loss = triplet_loss + self.alpha * approximation_loss
-        return loss, triplet_loss, approximation_loss
+        return loss, triplet_loss, approximation_loss*self.alpha
 
     def _triplet_forward(self, anchor_outs, positive_outs, negative_outs, positive_distance, negative_distance):
         mu = positive_distance - negative_distance

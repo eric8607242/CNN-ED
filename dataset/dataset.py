@@ -69,10 +69,7 @@ class EvalDataset:
     def __init__(self, query, alphabet_table, max_str_len, distance_info=None):
         self.query = query
 
-        self.nearest_info = nearest_info
         self.distance_info = distance_info
-
-        self.neighbors_num = neighbors_num
 
         self.alphabet_table = alphabet_table
         self.alphabet_len = len(alphabet_table)

@@ -1,6 +1,8 @@
 import numpy as np
 
-def evaluate(query_out, base_out, eval_distance, K=10):
+import torch
+
+def evaluate(query_out, base_out, eval_distance, k=100):
     """
     Evaluate recall by threshold searching (Algorithm 2 in the paper)
     """
@@ -8,12 +10,18 @@ def evaluate(query_out, base_out, eval_distance, K=10):
     for i, query in enumerate(query_out):
         candidate_set = []
         result_set = []
-        for j, base in enumerate(base_out):
-            distance = torch.norm(query - base, dim=1)
-            candidate_set.append(distance.item())
 
-            gt_distance = eval_distance[i, j]
-            result_set.append(distance.item())
+        distance = torch.norm(query-base_out, dim=1)
+        candidate_set.append(distance)
+
+        gt_distance = eval_distance[i]
+        result_set.append(gt_distance)
+
+        candidate_set = torch.cat(candidate_set)
+        result_set = torch.cat(result_set)
+
+        candidate_set = candidate_set.cpu().numpy()
+        result_set = result_set.cpu().numpy()
 
         recall = calculate_recall(candidate_set, result_set, k)
         average_recall += recall
@@ -22,17 +30,13 @@ def evaluate(query_out, base_out, eval_distance, K=10):
 
 
 def calculate_recall(candidate_set, result_set, k):
-    candidate_set = np.array(candidate_set)
-    result_set = np.array(result_set)
-
     candidate_argsort = candidate_set.argsort()[:k]
     result_argsort = result_set.argsort()[:k]
 
-    tp = candidate_set[np.in1d(candidate_argsort, result_argsort)]
-    fn = candidate_set[np.logical_not(np.in1d(candidate_argsort, result_argsort))]
+    tp = len(candidate_argsort[np.in1d(candidate_argsort, result_argsort)])
+    fn = len(candidate_argsort[np.logical_not(np.in1d(candidate_argsort, result_argsort))])
 
     recall = tp / (tp+fn)
-
     return recall
 
 

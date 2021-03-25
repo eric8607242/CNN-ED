@@ -14,7 +14,7 @@ dataset:
 
 dataloader:
   batch_size: 64
-  num_workers: 0
+  num_workers: 4
 
 model:
   n_features: 128
@@ -24,4 +24,4 @@ optimizer:
   lr: 0.001
 
 criterion:
-  alpha: 0.8
+  alpha: 0.1

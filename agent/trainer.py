@@ -21,13 +21,6 @@ class Trainer:
 
         # Dataset
         # ===================================================================
-        """
-        train_dataset, val_dataset, alphabet_len, max_str_len = \
-                get_dataset(path_to_dataset=config["dataset"]["path_to_dataset"],
-                            training_set_num=config["dataset"]["training_set_num"], 
-                            query_set_num=config["dataset"]["query_set_num"],
-                            neighbor_num=config["dataset"]["neighbor_num"])
-        """
         train_dataset, query_dataset, base_dataset, alphabet_len, max_str_len = \
                 get_dataset(path_to_dataset=config["dataset"]["path_to_dataset"],
                             training_set_num=config["dataset"]["training_set_num"], 
@@ -38,12 +31,6 @@ class Trainer:
                                        batch_size=config["dataloader"]["batch_size"],
                                        num_workers=config["dataloader"]["num_workers"],
                                        shuffle=True)
-        """
-        self.val_loader = DataLoader(dataset=val_dataset,
-                                     batch_size=config["dataloader"]["batch_size"],
-                                     num_workers=config["dataloader"]["num_workers"],
-                                     shuffle=False)
-        """
         self.query_loader = DataLoader(dataset=query_dataset,
                                        batch_size=config["dataloader"]["batch_size"],
                                        num_workers=config["dataloader"]["num_workers"],
@@ -129,21 +116,6 @@ class Trainer:
 
     def _validate(self):
         with torch.no_grad():
-            """
-            for i, data in enumerate(self.val_loader):
-                anchor_onehot_string, positive_onehot_string, negative_onehot_string, positive_distance, negative_distance = self._data_preprocess(data)
-                N = anchor_onehot_string.shape[0]
-
-                anchor_outs = self.model(anchor_onehot_string)
-                positive_outs = self.model(positive_onehot_string)
-                negative_outs = self.model(negative_onehot_string)
-
-                loss, triplet_loss, appro_loss = self.criterion(anchor_outs, positive_outs, negative_outs, positive_distance, negative_distance)
-            
-                self._intermediate_stats_logging(i, len(self.val_loader), loss, triplet_loss, appro_loss, N, "Val")
-            self._reset_losses()
-            #self._save_checkpoint()
-            """
             query_outs_list = []
             query_distance = []
             for i, data in enumerate(self.query_loader):
@@ -170,6 +142,7 @@ class Trainer:
             base_outs = torch.cat(base_outs_list)
 
             average_recall = evaluate(query_outs, base_outs, query_distance)
+            logging.info("Val : [{:3d}/{}] Evaluate recall : {}".format(self.current_epoch, self.config["train"]["n_epochs"], average_recall))
 
 
     def _save_checkpoint(self):
