@@ -121,6 +121,9 @@ class Trainer:
             logging.info("{} : [{:3d}/{}] Step {:03d}/{:03d} Loss {:.3f} Triplet Loss {:.3f} Approx Loss {:.3f}".format(val_train_state, self.current_epoch, self.config["train"]["n_epochs"], step, len_loader-1, self.losses.get_avg(), self.triplet_losses.get_avg(), self.appro_losses.get_avg()))
 
     def _reset_losses(self):
+        """
+        After each epoch, reset the losses tracker.
+        """
         self.losses.reset()
         self.triplet_losses.reset()
         self.appro_losses.reset()

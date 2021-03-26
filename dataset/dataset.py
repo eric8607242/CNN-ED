@@ -4,6 +4,9 @@ import Levenshtein
 import torch
 
 class Dataset:
+    """
+    Dataset for training mode.
+    """
     def __init__(self, query, base, nearest_info, distance_info, alphabet_table, max_str_len, neighbors_num=100):
         self.query = query
         self.base = base
@@ -38,6 +41,10 @@ class Dataset:
         return (anchor_onehot_string, positive_onehot_string, negative_onehot_string, positive_distance, negative_distance)
 
     def _get_pos_neg_string(self, idx):
+        """
+        Prepare the trplet pair (positive sample and negative sample).
+        Make sure that the distance of the positvie sample is smaller than the distance of the negative sample.
+        """
         positive_idx = np.random.randint(self.neighbors_num//2)
         nearest_positive_idx = self.nearest_info[idx, positive_idx]
         positive_string = self.base[nearest_positive_idx]
@@ -73,6 +80,9 @@ class Dataset:
 
 
 class EvalDataset:
+    """
+    Dataset for evaluation mode.
+    """
     def __init__(self, query, alphabet_table, max_str_len, distance_info=None):
         self.query = query
 
@@ -90,6 +100,7 @@ class EvalDataset:
         anchor_onehot_string = self._encoding_string(anchor_string)
         
         if self.distance_info is not None:
+            # For query dataset
             anchor_distance = self.distance_info[idx]
             return anchor_onehot_string, anchor_distance
         return anchor_onehot_string
