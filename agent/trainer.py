@@ -69,10 +69,15 @@ class Trainer:
         self.appro_losses = AverageMeter()
 
     def train(self):
+        best_recall = 0
         for epoch in range(self.current_epoch+1, self.config["train"]["n_epochs"]):
             self.current_epoch = epoch
             self._train_one_epoch()
-            self._validate()
+            recall = self._validate()
+
+            if recall > best_recall:
+                self._save_checkpoint()
+                best_recall = recall
 
     def resume(self):
         checkpoint_path = osp.join(self.config["train"]["logdir"], "best.pth")
@@ -141,8 +146,9 @@ class Trainer:
                 base_outs_list.append(anchor_outs)
             base_outs = torch.cat(base_outs_list)
 
-            average_recall = evaluate(query_outs, base_outs, query_distance)
-            logging.info("Val : [{:3d}/{}] Evaluate recall : {}".format(self.current_epoch, self.config["train"]["n_epochs"], average_recall))
+            average_recall = evaluate(query_outs, base_outs, query_distance, self.config["evaluate"]["K"])
+            logging.info("Val : [{:3d}/{}] Evaluate recall (K : {}) : {:.4f}".format(self.current_epoch, self.config["train"]["n_epochs"], self.config["evaluate"]["K"], average_recall))
+        return average_recall
 
 
     def _save_checkpoint(self):

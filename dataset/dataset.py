@@ -17,6 +17,8 @@ class Dataset:
         self.alphabet_len = len(alphabet_table)
         self.max_str_len = max_str_len
 
+        self.distance_avg = distance_info.mean()
+
     def __len__(self):
         return len(self.query)
 
@@ -36,17 +38,22 @@ class Dataset:
         return (anchor_onehot_string, positive_onehot_string, negative_onehot_string, positive_distance, negative_distance)
 
     def _get_pos_neg_string(self, idx):
-        positive_idx = np.random.randint(self.neighbors_num-1)
-        negative_idx = np.random.randint(positive_idx+1, self.neighbors_num)
-
-        positive_idx = self.nearest_info[idx, positive_idx]
-        negative_idx = self.nearest_info[idx, negative_idx]
-
-        positive_string = self.base[positive_idx]
-        negative_string = self.base[negative_idx]
-
+        positive_idx = np.random.randint(self.neighbors_num//2)
+        nearest_positive_idx = self.nearest_info[idx, positive_idx]
+        positive_string = self.base[nearest_positive_idx]
         positive_distance = self.distance_info[idx, positive_idx]
+
+        negative_idx = np.random.randint(positive_idx+1, self.neighbors_num)
+        nearest_negative_idx = self.nearest_info[idx, negative_idx]
         negative_distance = self.distance_info[idx, negative_idx]
+
+        # Prevent negative sample and positive sample with the same distance
+        while negative_distance <= positive_distance and negative_idx < len(self.query)-1:
+            negative_idx += 1
+            nearest_negative_idx = self.nearest_info[idx, negative_idx]
+            negative_distance = self.distance_info[idx, negative_idx]
+
+        negative_string = self.base[nearest_negative_idx]
 
         return positive_string, negative_string, positive_distance, negative_distance
 
@@ -96,7 +103,7 @@ class EvalDataset:
 
         for i, char in enumerate(string):
             char_idx = self.alphabet_table.index(char)
-            onehot_string[char_idx][i] = 1
+            onehot_string[char_idx, i] = 1
 
         return onehot_string
 
@@ -156,7 +163,7 @@ class SplitDataset:
 
         train_data = [data[idx] for idx in data_idx[:training_set_num]]
         query_data = [data[idx] for idx in data_idx[training_set_num:query_set_num+training_set_num]]
-        base_data = [data[idx] for idx in data_idx[query_set_num:]]
+        base_data = [data[idx] for idx in data_idx[query_set_num+training_set_num:]]
 
         return train_data, query_data, base_data
 
