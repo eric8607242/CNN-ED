@@ -7,10 +7,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from tensorboardX import SummaryWriter
 
 from dataset import get_dataset
 from model import get_model_config, Model
-from utils import Criterion, get_logger, AverageMeter, set_random_seed, evaluate
+from utils import Criterion, get_logger, AverageMeter, set_random_seed, evaluate, get_writer
 
 class Trainer:
     def __init__(self, config):
@@ -63,6 +64,7 @@ class Trainer:
 
         # Logger
         # ===================================================================
+        self.writer = get_writer(config["train"]["logdir_tb"])
         get_logger(config["train"]["logdir"])
         self.losses = AverageMeter()
         self.triplet_losses = AverageMeter()
@@ -104,6 +106,10 @@ class Trainer:
             self.optimizer.step()
             
             self._intermediate_stats_logging(i, len(self.train_loader), loss, triplet_loss, appro_loss, N, "Train")
+
+        self.writer.add_scalar("Train Loss/total_loss", self.losses.get_avg(), self.current_epoch)
+        self.writer.add_scalar("Train Loss/triplet loss", self.triplet_losses.get_avg(), self.current_epoch)
+        self.writer.add_scalar("Train Loss/approximation loss", self.appro_losses.get_avg(), self.current_epoch)
         self._reset_losses()
 
     def _intermediate_stats_logging(self, step, len_loader, loss, triplet_loss, appro_loss, N, val_train_state):
@@ -148,6 +154,8 @@ class Trainer:
 
             average_recall = evaluate(query_outs, base_outs, query_distance, self.config["evaluate"]["K"])
             logging.info("Val : [{:3d}/{}] Evaluate recall (K : {}) : {:.4f}".format(self.current_epoch, self.config["train"]["n_epochs"], self.config["evaluate"]["K"], average_recall))
+
+        self.writer.add_scalar("Val Recall/recall". average_recall, self.current_epoch)
         return average_recall
 
 

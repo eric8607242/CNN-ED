@@ -63,3 +63,11 @@ def get_logger(log_dir=None):
         file_handler.setFormatter(logging.Formatter(log_format))
 
     logging.getLogger().addHandler(file_handler)
+
+def get_writer(writer_dir=None):
+    today = datetime.today()
+    current_time = today.strftime("%d%m%Y%H%M%S")
+    writer_dir = os.path.join(writer_dir, current_time)
+
+    writer = SummaryWriter(log_dir=writer_dir)
+    return writer
