@@ -3,6 +3,7 @@ train:
   n_epochs: 50
   triplet_sample_num: 64
   logdir: "./logs/"
+  logdir_tb: "./logs/tb/"
   resume: false
   print_freq: 100
 

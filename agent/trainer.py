@@ -107,9 +107,9 @@ class Trainer:
             
             self._intermediate_stats_logging(i, len(self.train_loader), loss, triplet_loss, appro_loss, N, "Train")
 
-        self.writer.add_scalar("Train Loss/total_loss", self.losses.get_avg(), self.current_epoch)
-        self.writer.add_scalar("Train Loss/triplet loss", self.triplet_losses.get_avg(), self.current_epoch)
-        self.writer.add_scalar("Train Loss/approximation loss", self.appro_losses.get_avg(), self.current_epoch)
+        self.writer.add_scalar("Train_Loss/total_loss", self.losses.get_avg(), self.current_epoch)
+        self.writer.add_scalar("Train_Loss/triplet_loss", self.triplet_losses.get_avg(), self.current_epoch)
+        self.writer.add_scalar("Train_Loss/approximation_loss", self.appro_losses.get_avg(), self.current_epoch)
         self._reset_losses()
 
     def _intermediate_stats_logging(self, step, len_loader, loss, triplet_loss, appro_loss, N, val_train_state):
@@ -155,7 +155,7 @@ class Trainer:
             average_recall = evaluate(query_outs, base_outs, query_distance, self.config["evaluate"]["K"])
             logging.info("Val : [{:3d}/{}] Evaluate recall (K : {}) : {:.4f}".format(self.current_epoch, self.config["train"]["n_epochs"], self.config["evaluate"]["K"], average_recall))
 
-        self.writer.add_scalar("Val Recall/recall". average_recall, self.current_epoch)
+        self.writer.add_scalar("Val_Recall/recall", average_recall, self.current_epoch)
         return average_recall
 
 

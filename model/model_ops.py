@@ -11,7 +11,7 @@ class Conv1dPool(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
-        #x = self.relu(x)
+        x = self.relu(x)
         x = self.pool(x)
         return x
 
